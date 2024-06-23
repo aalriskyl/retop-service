@@ -2,16 +2,25 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 const profileRoutes = require('./routes/profileRoutes');
-// const RouteUser = require('./routes/userRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 
 const app = express();
+
+// Middleware
 app.use(bodyParser.json());
 app.use(cors());
 
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/toko', { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect('mongodb://localhost:27017/toko', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
   .then(() => {
     console.log('Connected to MongoDB');
   })
@@ -21,10 +30,9 @@ mongoose.connect('mongodb://localhost:27017/toko', { useNewUrlParser: true, useU
 
 // Routes
 app.use('/profiles', profileRoutes);
-// app.use ('/user', )
+app.use('/api/blogs', blogRoutes);
 
-
-// Error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('Something went wrong!');
@@ -36,7 +44,7 @@ const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-// Gracefully handle server shutdown
+// Graceful shutdown
 process.on('SIGINT', () => {
   console.log('Server is shutting down...');
   server.close(() => {

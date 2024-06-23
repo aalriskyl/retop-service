@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [formData, setFormData] = useState({
     name: '',
     password: ''
   });
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -19,6 +22,12 @@ const Login = () => {
     try {
       const response = await axios.post('http://localhost:3001/profiles/login', formData);
       console.log(response.data); // Handle the response as per your application logic
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        setTimeout(() => {
+          navigate('/admin');
+        }, 1000); // Redirect after 1 seconds
+      }
     } catch (error) {
       console.error('Login failed:', error);
       // Handle login failure, show error message, etc.
@@ -34,7 +43,7 @@ const Login = () => {
             <label htmlFor="name" className="block font-semibold">Username</label>
             <input
               type="text"
-              id="rname"
+              id="name"
               name="name"
               className="w-full border border-gray-300 rounded-md p-2"
               value={formData.name}

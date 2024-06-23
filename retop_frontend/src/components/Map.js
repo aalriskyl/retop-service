@@ -1,13 +1,54 @@
-import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Circle, useMapEvents } from "react-leaflet";
+import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import axios from "axios";
-import 'leaflet/dist/leaflet.css';
+import RedIcon from './assets/img/popup-red.png';
+import BlueIcon from './assets/img/popup-blue.png';
+import ReactWhatsapp from 'react-whatsapp';
 
-// Ensure default icon assets are properly linked
-import 'leaflet/dist/images/marker-shadow.png';
-import 'leaflet/dist/images/marker-icon-2x.png';
-import 'leaflet/dist/images/marker-icon.png';
+// Fix Leaflet's default icon issue with Webpack
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
+
+// Define custom marker icons
+const redMarkerIcon = L.icon({
+  iconUrl: RedIcon,
+  iconSize: [30, 30],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const blueMarkerIcon = L.icon({
+  iconUrl: BlueIcon,
+  iconSize: [30, 30],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const haversineDistance = (coords1, coords2) => {
+  const toRad = (angle) => (angle * Math.PI) / 180;
+
+  const lat1 = coords1[0];
+  const lon1 = coords1[1];
+  const lat2 = coords2[0];
+  const lon2 = coords2[1];
+
+  const R = 6371; // Radius of Earth in kilometers
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in kilometers
+};
 
 const LocationMarker = ({ setCurrentLocation, setZoomLevel }) => {
   const [position, setPosition] = useState(null);
@@ -27,31 +68,16 @@ const LocationMarker = ({ setCurrentLocation, setZoomLevel }) => {
 
   return position ? (
     <>
-      <Marker position={position}>
-        <Circle center={position} color="red" fillColor="#f03" fillOpacity={0.1} radius={8000} />
+      <Marker position={position} icon={blueMarkerIcon}>
+        <Popup>You are here</Popup>
+        <Circle center={position} pathOptions={{ color: 'red' }} radius={8000} />
       </Marker>
     </>
   ) : null;
 };
 
-const Map = ({ showMarker, currentLocation, selectedShop, zoomLevel, setCurrentLocation, setZoomLevel }) => {
+const Map = ({ showMarker, showMarkers, currentLocation, selectedShop, zoomLevel, setCurrentLocation, setZoomLevel, markers, handleShopSelect }) => {
   const [position, setPosition] = useState(currentLocation || [-6.178306, 106.631889]);
-  const [markers, setMarkers] = useState([]);
-  const [map, setMap] = useState(null);
-  const [showMarkers, setShowMarkers] = useState(false);
-
-  useEffect(() => {
-    const fetchMarkers = async () => {
-      try {
-        const { data } = await axios.get("http://localhost:3001/profiles");
-        setMarkers(data);
-      } catch (error) {
-        console.error("Error fetching markers:", error);
-      }
-    };
-
-    fetchMarkers();
-  }, []);
 
   useEffect(() => {
     if (currentLocation) {
@@ -66,66 +92,51 @@ const Map = ({ showMarker, currentLocation, selectedShop, zoomLevel, setCurrentL
     }
   }, [selectedShop]);
 
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const handleMarkerClick = (marker) => {
-    const markerPosition = [marker.location.coordinates[1], marker.location.coordinates[0]];
-    const distance = calculateDistance(position[0], position[1], markerPosition[0], markerPosition[1]);
-
-    const popupContent = `
-      <div>
-        <h3>${marker.name}</h3>
-        <img src="${marker.image}" alt="${marker.name}" style="width: 100px; height: 100px;" />
-        <p>Distance: ${distance.toFixed(2)} km</p>
-      </div>
-    `;
-
-    L.popup()
-      .setLatLng(markerPosition)
-      .setContent(popupContent)
-      .openOn(map);
-  };
-
-  const handleMapLoad = (mapInstance) => {
-    setMap(mapInstance);
-  };
-
-  const handleButtonClick = () => {
-    if (map) {
-      map.locate({
-        setView: true,
-        maxZoom: 16,
-      });
-      setShowMarkers((prev) => !prev);
-    }
-  };
-
   return (
-    <>
-      <button onClick={handleButtonClick}>
-        {showMarkers ? "Hide Markers" : "Show Markers"}
-      </button>
-      <MapContainer center={position} zoom={zoomLevel} style={{ height: "100%", width: "100%" }} whenCreated={handleMapLoad}>
+    <div className="w-full sm:w-4/5 mx-auto">
+      <MapContainer
+        center={position}
+        zoom={zoomLevel}
+        className="h-[60vh] w-100vh"
+      >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {showMarker && <LocationMarker setCurrentLocation={setCurrentLocation} setZoomLevel={setZoomLevel} />}
-        {showMarkers && markers.map((marker) => (
-          <Marker
-            key={marker._id}
-            position={[marker.location.coordinates[1], marker.location.coordinates[0]]}
-            eventHandlers={{ click: () => handleMarkerClick(marker) }}
-          />
-        ))}
+        {showMarkers && markers.map((marker) => {
+          const distance = currentLocation ? haversineDistance(currentLocation, [marker.location.coordinates[1], marker.location.coordinates[0]]) : null;
+          return (
+            <Marker
+              key={marker._id}
+              position={[marker.location.coordinates[1], marker.location.coordinates[0]]}
+              icon={redMarkerIcon}
+              eventHandlers={{
+                click: () => handleShopSelect(marker) // Trigger handleShopSelect with marker
+              }}
+            >
+              <Popup>
+                <div className="text-center">
+                  <h3 className="mb-1 text-lg font-bold">{marker.name}</h3>
+                  <img src={`http://localhost:3001${marker.imageUrl}`} alt={marker.name} className="w-24 h-auto mx-auto" />
+                  <p className="mt-1 text-sm">{marker.address}</p>
+                  {distance !== null && (
+                    <p className="mt-1 text-sm">Distance: {distance.toFixed(2)} km</p>
+                  )}
+                  <div>
+                    <ReactWhatsapp
+                      className="border rounded-lg cursor-pointer p-2 mx-auto"
+                      number={marker.phone}
+                      message="Haloo! saya ada masalah perihal laptop saya, (masukan masalah anda) apakah toko ini buka?"
+                    >
+                      <h3 className=" cursor-pointer">Hubungi Toko!</h3>
+                    </ReactWhatsapp>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
       </MapContainer>
-    </>
+    </div>
   );
 };
 

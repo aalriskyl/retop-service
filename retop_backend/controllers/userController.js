@@ -1,4 +1,3 @@
-// userController.js
 const User = require('../model/userModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
@@ -34,14 +33,14 @@ exports.loginUser = async (req, res) => {
   
   if (dataUser) {
     // if the username exists
-    const passwordUser = await bcryptjs.compare(password, dataUser.password);
+    const passwordUser = await bcrypt.compare(password, dataUser.password);
     
     if (passwordUser) {
       // if the password is correct
       const data = {
         id: dataUser._id,
       };
-      const token = jsonwebtoken.sign(data, process.env.JWT_SECRET);
+      const token = jwt.sign(data, JWT_SECRET);  // Use the JWT_SECRET variable here
       return res.status(201).json({
         message: "berhasil",
         token: token,
