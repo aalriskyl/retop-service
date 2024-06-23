@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNav from '../components/AdminNav';
+import Sidebar from '../components/Sidebar';
 import axios from 'axios';
 
 const AddBlog = () => {
@@ -18,7 +19,6 @@ const AddBlog = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check token
     const token = localStorage.getItem('token');
     if (token) {
       setToken(token);
@@ -51,7 +51,7 @@ const AddBlog = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     try {
       const formData = new FormData();
       formData.append('title', blogData.title);
@@ -61,20 +61,17 @@ const AddBlog = () => {
       if (selectedImage) {
         formData.append('image', selectedImage);
       }
-  
-      console.log('Form Data:', formData); // Log to check formData
-  
+
       const response = await axios.post('http://localhost:3001/api/blogs', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`, // Include token in headers if required
-          'Content-Type': 'multipart/form-data', // Ensure proper content type for FormData
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       console.log('Blog added successfully:', response.data);
       alert('Success');
-  
-      // Reset form fields and state
+
       setBlogData({
         title: '',
         author: '',
@@ -83,17 +80,19 @@ const AddBlog = () => {
       });
       setSelectedImage(null);
       setImagePreview('');
-  
-      // Optionally: Provide user feedback (toast, modal, redirect, etc.)
+
       alert('Blog added successfully!');
     } catch (error) {
       console.error('Error adding blog:', error);
-  
-      // Optionally: Handle error and provide user feedback
       alert('Failed to add blog. Please try again.');
     }
   };
-  
+
+  const sidebarLinks = [
+    { label: 'Add Blog', path: '/addblog' },
+    { label: 'Add Location', path: '/addlocation' },
+    // Add more sidebar links/buttons here as needed
+  ];
 
   return (
     <div>
@@ -106,8 +105,9 @@ const AddBlog = () => {
         </div>
       )}
       {token && (
-        <div>
-          <AdminNav />
+        <div className="flex"> {/* Use flex container to align Sidebar and content */}
+          <Sidebar links={sidebarLinks} />
+
           <div className="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
             <h1 className="text-3xl font-bold mb-4">Add Blog</h1>
             <form className="space-y-4" onSubmit={handleSubmit}>

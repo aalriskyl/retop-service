@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import AdminNav from '../components/AdminNav';
+import Sidebar from '../components/Sidebar';
 
 const AddLocation = () => {
   const [token, setToken] = useState(null);
@@ -16,7 +16,7 @@ const AddLocation = () => {
   });
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  
+
   const handlePhoneChange = (e) => {
     let value = e.target.value;
     
@@ -29,9 +29,9 @@ const AddLocation = () => {
 
   useEffect(() => {
     // Check token
-    const token = localStorage.getItem('token');
-    if (token) {
-      setToken(token);
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
     } else {
       setShowModal(true);
       setTimeout(() => {
@@ -40,8 +40,6 @@ const AddLocation = () => {
     }
   }, [navigate]);
 
-
-  
   const handleImageChange = (e) => {
     setTokoData({ ...tokoData, image: e.target.files[0] });
   };
@@ -69,20 +67,25 @@ const AddLocation = () => {
       console.log('Location added:', response.data);
       setTokoData({
         name: '',
-        phone: '',
+        phone: '+62',
         image: null,
         address: '',
         latitude: '',
         longitude: '',
       });
       setError(null);
+      // Optionally, reset the form here
     } catch (error) {
       console.error('Error adding location:', error.response?.data || error.message);
       setError('Failed to add location. Please try again.');
     }
   };
   
-  
+  const sidebarLinks = [
+    { label: 'Add Blog', path: '/addblog' },
+    { label: 'Add Location', path: '/addlocation' },
+    // Add more sidebar links/buttons here as needed
+  ];
 
   return (
     <div>
@@ -95,9 +98,12 @@ const AddLocation = () => {
         </div>
       )}
       {token && (
-        <div>
-          <AdminNav />
-          <div className="max-w-md mx-auto mt-8">
+        <div className="flex">
+          {/* Sidebar */}
+          <Sidebar links={sidebarLinks} />
+
+          {/* Main Content */}
+          <div className="flex-1 max-w-md mx-auto mt-8 px-4">
             <h2 className="text-2xl font-semibold mb-4">Add Location</h2>
             {error && <p className="text-red-500 mb-4">{error}</p>}
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -122,7 +128,7 @@ const AddLocation = () => {
                   type="text"
                   id="phone"
                   value={tokoData.phone}
-                  onChange={(e) => setTokoData({ ...tokoData, phone: e.target.value })}
+                  onChange={handlePhoneChange}
                   required
                   className="mt-1 p-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
@@ -163,6 +169,8 @@ const AddLocation = () => {
                   value={tokoData.latitude}
                   onChange={(e) => setTokoData({ ...tokoData, latitude: e.target.value })}
                   required
+                  pattern="^-?[0-9]{1,3}\.[0-9]{1,6}$" // Example pattern for latitude validation
+                  title="Latitude must be a number with up to 6 decimal places."
                   className="mt-1 p-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
               </div>
@@ -176,6 +184,8 @@ const AddLocation = () => {
                   value={tokoData.longitude}
                   onChange={(e) => setTokoData({ ...tokoData, longitude: e.target.value })}
                   required
+                  pattern="^-?[0-9]{1,3}\.[0-9]{1,6}$" // Example pattern for longitude validation
+                  title="Longitude must be a number with up to 6 decimal places."
                   className="mt-1 p-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
               </div>

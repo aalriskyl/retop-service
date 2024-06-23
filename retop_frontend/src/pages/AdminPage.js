@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 
 const AdminPage = () => {
   const [token, setToken] = useState(null);
@@ -9,9 +10,9 @@ const AdminPage = () => {
 
   useEffect(() => {
     // Check token
-    const token = localStorage.getItem('token');
-    if (token) {
-      setToken(token);
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
     } else {
       setShowModal(true);
       setTimeout(() => {
@@ -19,6 +20,18 @@ const AdminPage = () => {
       }, 3000); // Redirect after 3 seconds
     }
   }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    navigate('/login');
+  };
+
+  const sidebarLinks = [
+    { label: 'Add Blog', path: '/addblog' },
+    { label: 'Add Location', path: '/addlocation' },
+    // Add more sidebar links/buttons here as needed
+  ];
 
   return (
     <div>
@@ -31,20 +44,13 @@ const AdminPage = () => {
         </div>
       )}
       {token && (
-        <div>
-          <Navbar />
-          <div className="max-w-6xl mx-auto mt-8">
-            <h2 className="text-3xl font-bold mb-4">Admin Dashboard</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <Link to="/addblog" className="bg-blue-500 hover:bg-blue-500 text-white py-4 px-6 rounded-lg block text-center">
-                Add Blog
-              </Link>
-              <Link to="/addlocation" className="bg-green-500 hover:bg-green-600 text-white py-4 px-6 rounded-lg block text-center">
-                Add Location
-              </Link>
-              {/* You can add more links/buttons here for additional functionalities */}
-            </div>
-
+        <div className="flex">
+          {/* Sidebar */}
+          <Sidebar links={sidebarLinks} handleLogout={handleLogout} />
+          {/* Main Content */}
+          <div className="flex-1 max-w-6xl mx-auto mt-8 px-4">
+            <h2 className="text-3xl font-bold mb-4">Welcome to Admin Dashboard</h2>
+            {/* Main content of the dashboard can go here */}
           </div>
         </div>
       )}

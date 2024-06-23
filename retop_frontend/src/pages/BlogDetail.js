@@ -28,8 +28,7 @@ const BlogDetail = () => {
 
   return (
     <div>
-    <Navbar />
-    <div className="container mx-auto my-8 p-4">
+    <div className="container mx-auto my-8 py-4">
       <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
         <img className="w-full h-96 object-cover" src={`http://localhost:3001${blog.imageUrl}`} alt={blog.title} />
         <div className="p-6">
